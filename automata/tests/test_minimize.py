@@ -50,5 +50,3 @@ def test_unequal_sigma(test_file):
 def test_equal_sigma(test_file):
     dfa = read_automaton(f"test_data/{test_file}")
     assert dfa.accepts_all_words()
-
-

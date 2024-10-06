@@ -210,7 +210,7 @@ class Automaton:
             new_initial_state, new_accepting_states, new_transition_function)
 
     @staticmethod
-    def __is_isomorphic(lhs: Self, rhs: Self, perm: List[int]) -> bool:
+    def __is_isomorphic(lhs: Self, rhs: Self, perm: tuple[int, ...]) -> bool:
         if lhs.initial_states != set(perm[i] for i in rhs.initial_states):
             return False
         if lhs.accepting_states != set(perm[i] for i in rhs.accepting_states):
@@ -231,7 +231,9 @@ class Automaton:
         return True
 
 
-    def __eq__(self, other: Self) -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Automaton):
+            return False
         min_self: Self = self.get_dfa().minimize()
         min_other: Self = other.get_dfa().minimize()
 
