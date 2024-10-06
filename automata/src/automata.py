@@ -2,6 +2,7 @@ from collections import deque
 from typing import Self, List
 from itertools import permutations
 
+
 class Automaton:
     sigma: set[int]
     states: set[int]
@@ -144,7 +145,8 @@ class Automaton:
     def minimize(self) -> Self:
         assert (self.is_dfa())
 
-        usefull_states: List[int] = list(self.states - self.__get_useless_states())
+        usefull_states: List[int] = list(
+            self.states - self.__get_useless_states())
         states_size: int = len(usefull_states)
         distinguishable: List[List[int]] = [
             [-2]*states_size for i in range(states_size)]
@@ -164,13 +166,15 @@ class Automaton:
                 for j in range(i+1, states_size):
                     for a in self.sigma:
                         if usefull_states[i] not in self.transition_function or \
-                            usefull_states[j] not in self.transition_function:
+                                usefull_states[j] not in self.transition_function:
                             continue
                         if a not in self.transition_function[usefull_states[i]] or \
-                            a not in self.transition_function[usefull_states[j]]:
+                                a not in self.transition_function[usefull_states[j]]:
                             continue
-                        delta_i_a = list(self.transition_function[usefull_states[i]][a])[0]
-                        delta_j_a = list(self.transition_function[usefull_states[j]][a])[0]
+                        delta_i_a = list(
+                            self.transition_function[usefull_states[i]][a])[0]
+                        delta_j_a = list(
+                            self.transition_function[usefull_states[j]][a])[0]
                         if distinguishable[i][j] == -2 and distinguishable[delta_i_a][delta_j_a] != -2:
                             distinguishable[i][j] = a
                             distinguishable[j][i] = a
@@ -199,37 +203,17 @@ class Automaton:
             for edge in self.transition_function[src]:
                 if edge not in new_transition_function[new_id]:
                     new_transition_function[new_id][edge] = set()
-                new_transition_function[new_id][edge] |= set([new_states_id[q] for q in self.transition_function[src][edge]])
+                new_transition_function[new_id][edge] |= set(
+                    [new_states_id[q] for q in self.transition_function[src][edge]])
 
         new_states = set([i for i in range(id_counter)])
-        new_initial_state = set([new_states_id[q] for q in self.initial_states])
+        new_initial_state = set([new_states_id[q]
+                                for q in self.initial_states])
         new_accepting_states = set([
             new_states_id[q] for q in self.accepting_states])
 
         return Automaton(self.sigma.copy(), new_states,
-            new_initial_state, new_accepting_states, new_transition_function)
-
-    @staticmethod
-    def __is_isomorphic(lhs: Self, rhs: Self, perm: tuple[int, ...]) -> bool:
-        if lhs.initial_states != set(perm[i] for i in rhs.initial_states):
-            return False
-        if lhs.accepting_states != set(perm[i] for i in rhs.accepting_states):
-            return False
-
-        for src in rhs.transition_function:
-            p_src = perm[src]
-            if p_src not in rhs.transition_function:
-                return False
-            if len(lhs.transition_function[src]) != len(rhs.transition_function[p_src]):
-                return False
-            for edge in lhs.transition_function[src]:
-                if edge not in rhs.transition_function[p_src]:
-                    return False
-                if rhs.transition_function[p_src][edge] != set(perm[i] for i in lhs.transition_function[src][edge]):
-                    return False                    
-        
-        return True
-
+                         new_initial_state, new_accepting_states, new_transition_function)
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Automaton):
@@ -239,30 +223,54 @@ class Automaton:
 
         if min_self.sigma != min_other.sigma:
             return False
-        
+
         if len(min_self.states) != len(min_other.states):
             return False
-        
+
         if len(min_self.accepting_states) != len(min_other.accepting_states):
             return False
 
         if len(min_self.transition_function) != len(min_other.transition_function):
-            return False            
+            return False
 
-        perms = permutations(list(min_other.states))
-        # if states size is big, God bless you
-        for perm in perms:
-            if Automaton.__is_isomorphic(min_self, min_other, perm):
-                return True
+        state_size = len(min_self.states)
+        perm = [-1] * state_size
+        perm_inv = [-1] * state_size
+        queue_self: Deque[int] = deque([list(min_self.initial_states)[0]])
+        queue_other: Deque[int] = deque([list(min_other.initial_states)[0]])
 
-        return False
+        while queue_self and queue_other:
+            q_self = queue_self.popleft()
+            q_other = queue_other.popleft()
+            perm[q_self] = q_other
+            perm_inv[q_other] = q_self
+            if (q_self in min_self.transition_function) != (q_other in min_other.transition_function):
+                return False
+            if q_self not in min_self.transition_function:
+                continue
+            if min_self.transition_function[q_self].keys() != min_other.transition_function[q_other].keys():
+                return False
+            for edge in min_self.transition_function[q_self]:
+                dst_self = list(min_self.transition_function[q_self][edge])[0]
+                dst_other = list(
+                    min_other.transition_function[q_other][edge])[0]
+                if (perm[dst_self] == -1) != (perm_inv[dst_other] == -1):
+                    return False
+                if perm[dst_other] not in [-1, dst_other]:
+                    return False
+
+                if (perm[dst_self] == -1):
+                    queue_self.append(dst_self)
+                    queue_other.append(dst_other)
+
+        return not (queue_self or queue_other)
 
     @staticmethod
     def get_sigma_star(sigma: set[int]) -> Self:
         states = set([0])
         initial_states = set([0])
         accepting_states = set([0])
-        transition_function = {0 : {i : set([0]) for i in sigma}}
+        transition_function = {0: {i: set([0]) for i in sigma}}
         return Automaton(sigma.copy(), states, initial_states, accepting_states, transition_function)
 
     def accepts_all_words(self) -> bool:
