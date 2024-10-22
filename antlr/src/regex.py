@@ -1,9 +1,10 @@
 from enum import Enum
 from antlr4 import *
-from .antlr.RegexLexer import RegexLexer
-from .antlr.RegexParser import RegexParser
-from .antlr.RegexVisitor import RegexVisitor
+from .antlr.src.RegexLexer import RegexLexer
+from .antlr.src.RegexParser import RegexParser
+from .antlr.src.RegexVisitor import RegexVisitor
 from .regvisitor import RegVMVisitor
+
 
 class RegexMachine:
     Instructions: Enum = Enum(
@@ -18,7 +19,7 @@ class RegexMachine:
         self.regex: str = regex
         self.program: List[Instructions] = []
         self.args: list[list[chr] | list[int]] = []
-        
+
         input_stream = InputStream(regex)
 
         lexer = RegexLexer(input_stream)
@@ -26,7 +27,7 @@ class RegexMachine:
 
         parser = RegexParser(stream)
         visitor = RegVMVisitor()
-   
+
         try:
             res = visitor.visit(parser.expr())
 
@@ -44,11 +45,9 @@ class RegexMachine:
                 self.args[ip][0] += ip
                 self.args[ip][1] += ip
             if self.program[ip] == self.Instructions.Jmp:
-                self.args[ip][0] += ip 
+                self.args[ip][0] += ip
         self.program.append(self.Instructions.Match)
         self.args.append([])
-
-        
 
     def accepts(self, word: str, pc: int = 0, wc: int = 0):
         if pc >= len(self.program):

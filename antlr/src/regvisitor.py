@@ -1,28 +1,29 @@
 from antlr4 import *
-from .antlr.RegexLexer import RegexLexer
-from .antlr.RegexParser import RegexParser
-from .antlr.RegexVisitor import RegexVisitor
+from .antlr.src.RegexLexer import RegexLexer
+from .antlr.src.RegexParser import RegexParser
+from .antlr.src.RegexVisitor import RegexVisitor
+
 
 class RegVMVisitor(RegexVisitor):
 
-    def visitRegex(self, ctx:RegexParser.RegexContext):
+    def visitRegex(self, ctx: RegexParser.RegexContext):
         return self.visit(ctx.expr())
 
-    def visitPlusExpr(self, ctx:RegexParser.PlusExprContext):
+    def visitPlusQuant(self, ctx: RegexParser.PlusQuantContext):
         program, args = self.visit(ctx.atom())
         expr_len = len(program)
         program.append(4)
         args.append([-expr_len, +1])
         return program, args
 
-    def visitQmarkExpr(self, ctx:RegexParser.QmarkExprContext):
+    def visitQmarkQuant(self, ctx: RegexParser.QmarkQuantContext):
         program, args = self.visit(ctx.atom())
         expr_len = len(program)
         program.insert(0, 4)
         args.insert(0, [1, expr_len+1])
         return program, args
 
-    def visitStarExpr(self, ctx:RegexParser.StarExprContext):
+    def visitStarQuant(self, ctx: RegexParser.StarQuantContext):
         program, args = self.visit(ctx.atom())
         expr_len = len(program)
         program.insert(0, 4)
@@ -31,14 +32,14 @@ class RegVMVisitor(RegexVisitor):
         args.append([-expr_len-1])
         return program, args
 
-    def visitOrExpr(self, ctx:RegexParser.OrExprContext):
+    def visitOrExpr(self, ctx: RegexParser.OrExprContext):
         program_l, args_l = self.visit(ctx.left)
         program_r, args_r = self.visit(ctx.right)
         left_len = len(program_l)
         right_len = len(program_r)
 
         program = [4]
-        args = [[1,left_len+2]]
+        args = [[1, left_len+2]]
 
         program.extend(program_l)
         args.extend(args_l)
@@ -51,7 +52,7 @@ class RegVMVisitor(RegexVisitor):
 
         return program, args
 
-    def visitConExpr(self, ctx:RegexParser.ConExprContext):
+    def visitConExpr(self, ctx: RegexParser.ConExprContext):
         program_l, args_l = self.visit(ctx.left)
         program_r, args_r = self.visit(ctx.right)
 
@@ -60,10 +61,23 @@ class RegVMVisitor(RegexVisitor):
 
         return program_l, args_l
 
-    def visitAtom(self, ctx:RegexParser.AtomContext):
-        if ctx.expr() == None:
-            return [1], [[ctx.getText()]]
+
+    def visitAtomQuant(self, ctx: RegexParser.AtomQuantContext):
+        return self.visit(ctx.atom())
+
+
+    def visitTermExpr(self, ctx:RegexParser.TermExprContext):
+        return self.visit(ctx.term())
+
+
+    def visitQuantExpr(self, ctx:RegexParser.QuantExprContext):
+        return self.visit(ctx.quant())
+
+
+    def visitCharAtom(self, ctx:RegexParser.CharAtomContext):
+        return [1], [[ctx.getText()]]
+
+
+    def visitParExpr(self, ctx:RegexParser.ParExprContext):
         return self.visit(ctx.expr())
 
-    def visitAtomExpr(self, ctx:RegexParser.AtomExprContext):
-        return self.visit(ctx.atom())

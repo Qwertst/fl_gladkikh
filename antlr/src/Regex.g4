@@ -2,14 +2,22 @@ grammar Regex;
 
 regex: expr EOF;
 
-expr:    left=expr '|' right=expr  # OrExpr
-     |   left=expr right=expr #ConExpr
-     |   atom '?'  # QmarkExpr
-     |   atom '*'  # StarExpr
-     |   atom '+'  # PlusExpr
-     |   atom #AtomExpr
+expr: left=term '|' right=expr #OrExpr
+     | term #TermExpr
      ;
-atom: CHAR | '(' expr ')';
+
+term: left=quant right=expr #ConExpr
+     | quant #QuantExpr;
+
+quant: atom '?' # QmarkQuant
+     | atom '*' # StarQuant
+     | atom '+' # PlusQuant
+     | atom # AtomQuant
+     ;
+
+atom: CHAR #charAtom
+     | '(' expr ')' #parExpr
+     ;
 
 CHAR : [a-zA-Z0-9];
-WS  :   [ \t]+ -> skip ;
+WS  :   [ \t\n]+ -> skip ;
