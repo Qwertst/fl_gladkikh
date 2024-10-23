@@ -1,5 +1,5 @@
-from src.automata import Automaton
-from src.utils import read_automaton
+from ..src.automata import Automaton
+from ..src.utils import read_automaton
 import pytest
 
 def test_basic():
